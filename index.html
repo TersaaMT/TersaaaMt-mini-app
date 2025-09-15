@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TersaaMt</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Декоративные уголки */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 50px;
+            height: 50px;
+            border-top: 3px solid #1a237e;
+            border-left: 3px solid #1a237e;
+            border-top-left-radius: 8px;
+            z-index: 5;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            border-top: 3px solid #1a237e;
+            border-right: 3px solid #1a237e;
+            border-top-right-radius: 8px;
+            z-index: 5;
+        }
+
+        .header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(79, 172, 254, 0.2);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 101;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .invite-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 10px;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .invite-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .settings-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .container {
+            padding: 20px;
+            padding-bottom: 100px;
+            max-width: 100%;
+        }
+
+        .auth-screen {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+        }
+
+        .auth-title {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #b8c5d1;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.4);
+        }
+
+        .strategies-container {
+            padding: 0;
+            margin: 0;
+        }
+
+        .section {
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(79, 172, 254, 0.3) 15%, 
+                rgba(79, 172, 254, 0.6) 30%, 
+                rgba(0, 242, 254, 0.8) 50%, 
+                rgba(79, 172, 254, 0.6) 70%, 
+                rgba(79, 172, 254, 0.3) 85%, 
+                transparent 100%);
+            border-radius: 1px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #4facfe;
+        }
+
+        .strategy-card {
+            padding: 20px;
+            margin-bottom: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background: transparent;
+            border-radius: 0;
+        }
+
+        .strategy-card::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                transparent 15%, 
+                var(--strategy-color, #4facfe) 20%, 
+                var(--strategy-color, #4facfe) 80%, 
+                transparent 85%, 
+                transparent 100%);
+            opacity: 0.9;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .strategy-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--strategy-color);
+        }
+
+        .strategy-ma14 {
+            --strategy-color: #00c851;
+        }
+
+        .strategy-trendline {
+            --strategy-color: #ff6b35;
+        }
+
+        .strategy-channel {
+            --strategy-color: #9c27b0;
+        }
+
+        .signal-indicator {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .signal-buy {
+            background: linear-gradient(45deg, #00c851, #007e33);
+            color: white;
+        }
+
+        .signal-sell {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+
+        .signal-neutral {
+            background: linear-gradient(45deg, #ffbb33, #ff8800);
+            color: white;
+        }
+
+        .news-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .news-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20px;
+            right: 20px;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(79, 172, 254, 0.2) 25%, 
+                rgba(0, 242, 254, 0.4) 50%, 
+                rgba(79, 172, 254, 0.2) 75%, 
+                transparent 100%);
+        }
+
+        .news-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .news-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .news-summary {
+            color: #b8c5d1;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .news-date {
+            color: #4facfe;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .tradingview-widget {
+            height: 500px;
+            margin: 20px 0;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            z-index: 1000;
+        }
+
+        .bottom-nav::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(79, 172, 254, 0.3) 25%, 
+                rgba(0, 242, 254, 0.6) 50%, 
+                rgba(79, 172, 254, 0.3) 75%, 
+                transparent 100%);
+        }
+
+        /* Декоративные нижние уголки */
+        .bottom-nav::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 30px;
+            height: 30px;
+            border-bottom: 2px solid #1a237e;
+            border-left: 2px solid #1a237e;
+            border-bottom-left-radius: 6px;
+        }
+
+        .bottom-nav-corner-right {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            border-bottom: 2px solid #1a237e;
+            border-right: 2px solid #1a237e;
+            border-bottom-right-radius: 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 8px;
+            border-radius: 12px;
+            min-width: 70px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(79, 172, 254, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .support-form {
+            max-width: 500px;
+        }
+
+        .strategy-detail {
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .strategy-detail::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                var(--strategy-color, #4facfe) 50%, 
+                transparent 100%);
+            border-radius: 1px;
+        }
+
+        .floating-back-btn {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 14, 39, 0.9);
+            border: none;
+            border-radius: 50%;
+            color: #ffffff;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .floating-back-btn:hover {
+            background: rgba(79, 172, 254, 0.9);
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .floating-back-btn.show {
+            display: flex;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #b8c5d1;
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: rgba(10, 14, 39, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            display: none;
+            z-index: 200;
+            min-width: 250px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+
+        .settings-section {
+            margin-bottom: 20px;
+        }
+
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .settings-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 5px;
+        }
+
+        .settings-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-option:last-child {
+            margin-bottom: 0;
+        }
+
+        .promo-input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .promo-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .promo-btn {
+            width: 100%;
+            padding: 8px;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .promo-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .coin-selector {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .coin-btn {
+            min-width: 80px;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .coin-btn.active {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .coin-btn:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #b8c5d1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .coin-btn:not(.active):hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .coin-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .news-filters {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            margin-bottom: 10px;
+            overflow-x: auto;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: #ffffff;
+        }
+
+        .filter-btn:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #b8c5d1;
+        }
+
+        .filter-btn:not(.active):hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .news-importance {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-right: 10px;
+        }
+
+        .news-importance.high {
+            color: #ff4444;
+        }
+
+        .news-importance.medium {
+            color: #ffc107;
+        }
+
+        .news-importance.low {
+            color: #00c851;
+        }
+
+        .video-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .video-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20px;
+            bottom: 20px;
+            width: 3px;
+            background: linear-gradient(180deg, 
+                rgba(79, 172, 254, 0.2) 0%, 
+                rgba(79, 172, 254, 0.6) 50%, 
+                rgba(79, 172, 254, 0.2) 100%);
+            border-radius: 2px;
+        }
+
+        .video-item:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .video-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #00f2fe;
+        }
+
+        .video-duration {
+            color: #4facfe;
+            font-size: 14px;
+        }
+
+        .stats-section {
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .stats-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 193, 7, 0.4) 25%, 
+                rgba(255, 193, 7, 0.8) 50%, 
+                rgba(255, 193, 7, 0.4) 75%, 
+                transparent 100%);
+            border-radius: 1px;
+        }
+
+        .stats-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #ffc107;
+        }
+
+        .stats-question {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .stats-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stats-btn.yes {
+            background: linear-gradient(45deg, #00c851, #007e33);
+            color: white;
+        }
+
+        .stats-btn.no {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+
+        .stats-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .stats-result {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .stats-counter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .counter-label {
+            color: #b8c5d1;
+        }
+
+        .counter-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00f2fe;
+        }
+
+        .strategy-usage {
+            margin-top: 20px;
+        }
+
+        .usage-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .usage-item:last-child {
+            border-bottom: none;
+        }
+
+        .usage-strategy {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .usage-count {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .crypto-ticker {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 12px;
+            padding: 12px 0;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .crypto-ticker-content {
+            display: flex;
+            animation: scroll-left 25s linear infinite;
+            white-space: nowrap;
+        }
+
+        .crypto-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 35px;
+            font-size: 13px;
+            color: #ffffff;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .crypto-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .crypto-symbol {
+            color: #ffffff;
+            margin-right: 6px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .crypto-price {
+            color: #00c851;
+            font-weight: 600;
+        }
+
+        .crypto-change {
+            color: #00c851;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+
+        .video-lessons-section {
+            position: relative;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .video-lessons-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20px;
+            right: 20px;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 215, 0, 0.3) 20%, 
+                rgba(255, 215, 0, 0.8) 50%, 
+                rgba(255, 215, 0, 0.3) 80%, 
+                transparent 100%);
+        }
+
+        .video-lessons-section::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20px;
+            right: 20px;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 215, 0, 0.3) 20%, 
+                rgba(255, 215, 0, 0.8) 50%, 
+                rgba(255, 215, 0, 0.3) 80%, 
+                transparent 100%);
+        }
+
+        .video-lessons-title {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            color: #ffd700;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .crypto-change.negative {
+            color: #ff4444;
+        }
+
+        .video-lessons-content {
+            text-align: center;
+            padding: 40px 20px;
+            color: #b8c5d1;
+        }
+
+        .crypto-ticker::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            right: 20px;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 215, 0, 0.3) 20%, 
+                rgba(255, 215, 0, 0.8) 50%, 
+                rgba(255, 215, 0, 0.3) 80%, 
+                transparent 100%);
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+                padding-bottom: 100px;
+            }
+            
+            .auth-screen {
+                margin: 20px auto;
+                padding: 20px;
+            }
+            
+            .nav-label {
+                font-size: 10px;
+            }
+
+            .floating-back-btn {
+                top: 15px;
+                left: 15px;
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">TersaaMt</div>
+        <div class="header-right">
+            <button class="invite-btn" onclick="inviteFriend()" title="Пригласить друга">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="7" r="4" fill="currentColor"/>
+                    <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M21 21v-2a4 4 0 0 0-3-3.85" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <circle cx="18" cy="9" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <line x1="14" y1="14" x2="20" y2="14" stroke="currentColor" stroke-width="2"/>
+                    <line x1="17" y1="11" x2="17" y2="17" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </button>
+            <button class="invite-btn" onclick="showProfile()" title="Профиль" style="margin-right: 10px;">
+                👤
+            </button>
+            <button class="settings-btn" onclick="toggleSettingsDropdown()">⚙️</button>
+        </div>
+        
+        <div class="settings-dropdown" id="settingsDropdown">
+            <!-- Языки -->
+            <div class="settings-section">
+                <div class="settings-title">
+                    🔤 Язык
+                </div>
+                <div class="settings-option" onclick="setLanguage('ru')">
+                    <span style="margin-right: 10px;">🇷🇺</span> Русский
+                </div>
+                <div class="settings-option" onclick="setLanguage('en')">
+                    <span style="margin-right: 10px;">🇬🇧</span> English
+                </div>
+                <div class="settings-option" onclick="setLanguage('uz')">
+                    <span style="margin-right: 10px;">🇺🇿</span> O'zbek
+                </div>
+                <div class="settings-option" onclick="setLanguage('ja')">
+                    <span style="margin-right: 10px;">🇯🇵</span> Japanese
+                </div>
+            </div>
+
+            <!-- Тип графика -->
+            <div class="settings-section">
+                <div class="settings-title">
+                    📉 Тип графика
+                </div>
+                <div class="settings-option" onclick="setChartType('candles')">
+                    <span style="margin-right: 10px;">🕯️</span> Японские свечи
+                </div>
+                <div class="settings-option" onclick="setChartType('bars')">
+                    <span style="margin-right: 10px;">📊</span> Бары
+                </div>
+            </div>
+
+            <!-- Промокод -->
+            <div class="settings-section">
+                <div class="settings-title">
+                    🎁 Промокод
+                </div>
+                <input type="text" class="promo-input" id="promoInput" placeholder="Введите промокод">
+                <button class="promo-btn" onclick="activatePromo()">Активировать</button>
+            </div>
+
+            <!-- FAQ -->
+            <div class="settings-section">
+                <div class="settings-title">
+                    ❓ FAQ
+                </div>
+                <div class="settings-option" onclick="showFAQ()">
+                    <span style="margin-right: 10px;">📋</span> Часто задаваемые вопросы
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Плавающая кнопка "Назад" -->
+    <button class="floating-back-btn" id="floatingBackBtn" onclick="goBack()">
+        ←
+    </button>
+
+    <!-- Экран авторизации -->
+    <div id="authScreen" class="auth-screen">
+        <h1 class="auth-title">Добро пожаловать</h1>
+        <form id="authForm">
+            <div class="form-group">
+                <label class="form-label">Имя</label>
+                <input type="text" class="form-input" id="firstName" placeholder="Введите имя" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Фамилия</label>
+                <input type="text" class="form-input" id="lastName" placeholder="Введите фамилию" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Год рождения</label>
+                <input type="number" class="form-input" id="birthYear" placeholder="1990" min="1950" max="2010" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Опыт в трейдинге</label>
+                <select class="form-select" id="experience" required>
+                    <option value="">Выберите опыт</option>
+                    <option value="beginner">Новичок (0-6 месяцев)</option>
+                    <option value="intermediate">Средний (6 месяцев - 2 года)</option>
+                    <option value="advanced">Продвинутый (2-5 лет)</option>
+                    <option value="expert">Эксперт (5+ лет)</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Продолжить</button>
+        </form>
+    </div>
+
+    <!-- Основной контент -->
+    <div id="mainApp" style="display: none;">
+        <div class="container">
+            <!-- Страница Главная -->
+            <div id="homePage" class="page active">
+                <!-- Блок Видео уроки -->
+                <div class="video-lessons-section">
+                    <h2 class="video-lessons-title">Видео уроки</h2>
+                    
+                    <div class="video-lessons-content">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📚</div>
+                        <p style="font-size: 18px; line-height: 1.6;">
+                            Скоро тут будут обучающие видеоуроки.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Криптовалютный тикер -->
+                <div class="crypto-ticker">
+                    <div class="crypto-ticker-content">
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #f7931a, #ffb74d);">₿</div>
+                            <span class="crypto-symbol">BTC</span>
+                            <span class="crypto-price">$57,284</span>
+                            <span class="crypto-change">+2.3%</span>
+                        </div>
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #627eea, #8fa4f3);">Ξ</div>
+                            <span class="crypto-symbol">ETH</span>
+                            <span class="crypto-price">$3,120</span>
+                            <span class="crypto-change">+1.8%</span>
+                        </div>
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #26a17b, #4caf50);">₮</div>
+                            <span class="crypto-symbol">USDT</span>
+                            <span class="crypto-price">$1.00</span>
+                            <span class="crypto-change">+0.01%</span>
+                        </div>
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #23292f, #4a5568);">⊗</div>
+                            <span class="crypto-symbol">XRP</span>
+                            <span class="crypto-price">$0.52</span>
+                            <span class="crypto-change negative">-0.5%</span>
+                        </div>
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #f3ba2f, #fdd835);">B</div>
+                            <span class="crypto-symbol">BNB</span>
+                            <span class="crypto-price">$315.48</span>
+                            <span class="crypto-change">+3.2%</span>
+                        </div>
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #9945ff, #14f195);">◎</div>
+                            <span class="crypto-symbol">SOL</span>
+                            <span class="crypto-price">$145.67</span>
+                            <span class="crypto-change">+5.4%</span>
+                        </div>
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #2775ca, #42a5f5);">$</div>
+                            <span class="crypto-symbol">USDC</span>
+                            <span class="crypto-price">$1.00</span>
+                            <span class="crypto-change">+0.00%</span>
+                        </div>
+                        <div class="crypto-item">
+                            <div class="crypto-icon" style="background: linear-gradient(45deg, #c2a633, #ffc107);">Đ</div>
+                            <span class="crypto-symbol">DOGE</span>
+                            <span class="crypto-price">$0.084</span>
+                            <span class="crypto-change">+8.7%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Страница Стратегии -->
+            <div id="strategiesPage" class="page">
+                <!-- Селектор монет -->
+                <div class="coin-selector">
+                    <button class="coin-btn active" onclick="selectCoin('BTCUSDT')" data-coin="BTCUSDT">
+                        <div class="coin-icon" style="background: linear-gradient(45deg, #f7931a, #ffb74d); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold;">₿</div>
+                        BTC
+                    </button>
+                    <button class="coin-btn" onclick="selectCoin('ETHUSDT')" data-coin="ETHUSDT">
+                        <div class="coin-icon" style="background: linear-gradient(45deg, #627eea, #8fa4f3); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold;">Ξ</div>
+                        ETH
+                    </button>
+                    <button class="coin-btn" onclick="selectCoin('BNBUSDT')" data-coin="BNBUSDT">
+                        <div class="coin-icon" style="background: linear-gradient(45deg, #f3ba2f, #fdd835); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold;">B</div>
+                        BNB
+                    </button>
+                    <button class="coin-btn" onclick="selectCoin('SOLUSDT')" data-coin="SOLUSDT">
+                        <div class="coin-icon" style="background: linear-gradient(45deg, #9945ff, #14f195); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold;">◎</div>
+                        SOL
+                    </button>
+                    <button class="coin-btn" onclick="selectCoin('XRPUSDT')" data-coin="XRPUSDT">
+                        <div class="coin-icon" style="background: linear-gradient(45deg, #23292f, #4a5568); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold;">⊗</div>
+                        XRP
+                    </button>
+                    <button class="coin-btn" onclick="selectCoin('ADAUSDT')" data-coin="ADAUSDT">
+                        <div class="coin-icon" style="background: linear-gradient(45deg, #0033ad, #3f51b5); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold;">₳</div>
+                        ADA
+                    </button>
+                </div>
+
+                <div class="strategies-container">
+                    <h2 class="strategies-title">📈 Торговые стратегии</h2>
+                    
+                    <div class="strategies-chart" id="mainChart"></div>
+                    
+                    <div style="margin: 20px; margin-bottom: 25px; cursor: pointer;" onclick="showStrategy('ma14')">
+                        <div style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 200, 81, 0.3) 20%, rgba(0, 200, 81, 0.8) 50%, rgba(0, 200, 81, 0.3) 80%, transparent 100%); margin-bottom: 10px;"></div>
+                        <div style="text-align: center; font-size: 16px; font-weight: 600; color: #00c851; margin: 8px 0;">MA14</div>
+                        <div style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 200, 81, 0.3) 20%, rgba(0, 200, 81, 0.8) 50%, rgba(0, 200, 81, 0.3) 80%, transparent 100%); margin-top: 10px;"></div>
+                    </div>
+                    <div style="margin: 20px; margin-bottom: 25px; cursor: pointer;" onclick="showStrategy('trendline')">
+                        <div style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(255, 107, 53, 0.3) 20%, rgba(255, 107, 53, 0.8) 50%, rgba(255, 107, 53, 0.3) 80%, transparent 100%); margin-bottom: 10px;"></div>
+                        <div style="text-align: center; font-size: 16px; font-weight: 600; color: #ff6b35; margin: 8px 0;">Пробой трендовой линии</div>
+                        <div style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(255, 107, 53, 0.3) 20%, rgba(255, 107, 53, 0.8) 50%, rgba(255, 107, 53, 0.3) 80%, transparent 100%); margin-top: 10px;"></div>
+                    </div>
+                    <div style="margin: 20px; margin-bottom: 25px; cursor: pointer;" onclick="showStrategy('channel')">
+                        <div style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(156, 39, 176, 0.3) 20%, rgba(156, 39, 176, 0.8) 50%, rgba(156, 39, 176, 0.3) 80%, transparent 100%); margin-bottom: 10px;"></div>
+                        <div style="text-align: center; font-size: 16px; font-weight: 600; color: #9c27b0; margin: 8px 0;">Трендовый канал</div>
+                        <div style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(156, 39, 176, 0.3) 20%, rgba(156, 39, 176, 0.8) 50%, rgba(156, 39, 176, 0.3) 80%, transparent 100%); margin-top: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Детали стратегии -->
+            <div id="strategyDetail" class="page">
+                <div class="strategy-detail">
+                    <h2 class="section-title" id="strategyDetailTitle"></h2>
+                    <div id="strategyDetailContent"></div>
+                </div>
+            </div>
+
+            <!-- Страница Наша семья -->
+            <div id="familyPage" class="page">
+                <div class="section">
+                    <h2 class="section-title">👨‍👩‍👧‍👦 Наша семья</h2>
+                    
+                    <!-- Кнопка "Мой профиль" -->
+                    <div style="margin-bottom: 30px;">
+                        <button class="btn-primary" onclick="showProfile()" style="background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%); margin-top: 0;">
+                            👤 Мой профиль
+                        </button>
+                    </div>
+                    
+                    <!-- Список пользователей семьи -->
+                    <div id="familyMembers">
+                        <div style="background: rgba(255, 255, 255, 0.08); border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(45deg, #00c851, #007e33); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white;">
+                                👑
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="color: #ffffff; font-weight: bold; margin-bottom: 5px;">Александр К.</div>
+                                <div style="color: #00c851; font-size: 14px;">Глава семьи • Эксперт • 1,247 очков</div>
+                            </div>
+                            <div style="background: linear-gradient(45deg, #ffc107, #ff8800); color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;">
+                                VIP
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(255, 255, 255, 0.08); border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(45deg, #4facfe, #00f2fe); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white;">
+                                👤
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="color: #ffffff; font-weight: bold; margin-bottom: 5px;">Мария С.</div>
+                                <div style="color: #4facfe; font-size: 14px;">Продвинутый • 892 очка</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.2); color: #b8c5d1; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;">
+                                PRO
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(255, 255, 255, 0.08); border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(45deg, #9c27b0, #e91e63); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white;">
+                                👤
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="color: #ffffff; font-weight: bold; margin-bottom: 5px;">Дмитрий П.</div>
+                                <div style="color: #9c27b0; font-size: 14px;">Средний • 634 очка</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.1); color: #b8c5d1; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;">
+                                FREE
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Статистика семьи -->
+                    <div style="background: rgba(255, 255, 255, 0.08); border-radius: 15px; padding: 20px; margin-top: 30px;">
+                        <h4 style="color: #ffc107; margin-bottom: 15px;">📊 Статистика семьи</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #b8c5d1;">Всего участников:</span>
+                            <span style="color: #ffffff; font-weight: 500;">4 человека</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #b8c5d1;">Общие очки:</span>
+                            <span style="color: #00f2fe; font-weight: 500;">2,773 очка</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #b8c5d1;">Место в рейтинге:</span>
+                            <span style="color: #ffc107; font-weight: 500;">#1247</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Страница Новости -->
+            <div id="newsPage" class="page">
+                <div class="section">
+                    <h2 class="section-title">📰 Крипто новости</h2>
+                    
+                    <!-- Фильтры важности -->
+                    <div class="news-filters">
+                        <button class="filter-btn active" onclick="filterNews('all')" data-filter="all">
+                            📰 Все новости
+                        </button>
+                        <button class="filter-btn" onclick="filterNews('high')" data-filter="high">
+                            ⭐⭐⭐ Высокая
+                        </button>
+                        <button class="filter-btn" onclick="filterNews('medium')" data-filter="medium">
+                            ⭐⭐ Средняя
+                        </button>
+                        <button class="filter-btn" onclick="filterNews('low')" data-filter="low">
+                            ⭐ Низкая
+                        </button>
+                    </div>
+                    
+                    <div id="newsContainer">
+                        <div class="loading">Загрузка новостей...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Страница Аналитика -->
+            <div id="analyticsPage" class="page">
+                <div class="section">
+                    <h2 class="section-title">📊 Аналитика</h2>
+                    
+                    <!-- Статистика -->
+                    <div class="stats-section">
+                        <h3 class="stats-title">📊 Статистика использования</h3>
+                        
+                        <div class="stats-question">
+                            <p style="margin-bottom: 10px; font-size: 16px; color: #ffffff;">Вы использовали стратегии?</p>
+                            <div class="stats-buttons">
+                                <button class="stats-btn yes" onclick="setStrategyUsage(true)">✅ Да</button>
+                                <button class="stats-btn no" onclick="setStrategyUsage(false)">❌ Нет</button>
+                            </div>
+                        </div>
+
+                        <div class="stats-result" id="statsResult">
+                            <div class="stats-counter">
+                                <span class="counter-label">Всего использований:</span>
+                                <span class="counter-value" id="totalUsage">0</span>
+                            </div>
+                            
+                            <div class="strategy-usage" id="strategyUsage">
+                                <div class="usage-item">
+                                    <span class="usage-strategy">MA14</span>
+                                    <span class="usage-count" id="ma14Count">0</span>
+                                </div>
+                                <div class="usage-item">
+                                    <span class="usage-strategy">Трендовая линия</span>
+                                    <span class="usage-count" id="trendlineCount">0</span>
+                                </div>
+                                <div class="usage-item">
+                                    <span class="usage-strategy">Трендовый канал</span>
+                                    <span class="usage-count" id="channelCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; padding: 40px 20px; color: #b8c5d1; margin-top: 30px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📈</div>
+                        <h3 style="color: #00f2fe; margin-bottom: 15px;">Дополнительная аналитика</h3>
+                        <p style="line-height: 1.6;">
+                            • Детальная аналитика ваших сделок<br>
+                            • История использования стратегий<br>
+                            • Процент успешных сигналов<br>
+                            • Рекомендации по улучшению
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Страница Профиль -->
+            <div id="profilePage" class="page">
+                <div class="section">
+                    <h2 class="section-title">👤 Мой профиль</h2>
+                    
+                    <div id="profileContent">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="width: 80px; height: 80px; background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white;">
+                                👤
+                            </div>
+                            <h3 style="color: #4facfe; margin-bottom: 5px;" id="profileName">Имя Фамилия</h3>
+                            <p style="color: #b8c5d1; font-size: 14px;" id="profileExperience">Опыт в трейдинге</p>
+                        </div>
+                        
+                        <div style="background: rgba(255, 255, 255, 0.08); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <span style="color: #b8c5d1;">Имя:</span>
+                                <span style="color: #ffffff; font-weight: 500;" id="profileFirstName">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <span style="color: #b8c5d1;">Фамилия:</span>
+                                <span style="color: #ffffff; font-weight: 500;" id="profileLastName">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <span style="color: #b8c5d1;">Год рождения:</span>
+                                <span style="color: #ffffff; font-weight: 500;" id="profileBirthYear">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #b8c5d1;">Опыт:</span>
+                                <span style="color: #ffffff; font-weight: 500;" id="profileExp">-</span>
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(255, 255, 255, 0.08); border-radius: 15px; padding: 20px;">
+                            <h4 style="color: #00f2fe; margin-bottom: 15px;">📊 Статистика</h4>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="color: #b8c5d1;">Дата регистрации:</span>
+                                <span style="color: #ffffff; font-weight: 500;" id="profileRegistered">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #b8c5d1;">Premium доступ:</span>
+                                <span style="color: #ffc107; font-weight: 500;" id="profilePremium">Нет</span>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="editProfile()" style="margin-top: 20px;">
+                            ✏️ Редактировать профиль
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Страница Поддержка -->
+            <div id="supportPage" class="page">
+                <div class="section">
+                    <h2 class="section-title">🛟 Поддержка</h2>
+                    <form class="support-form" id="supportForm">
+                        <div class="form-group">
+                            <label class="form-label">Имя</label>
+                            <input type="text" class="form-input" id="supportName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Тема обращения</label>
+                            <input type="text" class="form-input" id="supportSubject" placeholder="Кратко опишите проблему" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-input" id="supportDescription" rows="5" placeholder="Подробно опишите вашу проблему или вопрос" required style="resize: vertical; min-height: 120px;"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Отправить запрос</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Нижнее меню -->
+        <div class="bottom-nav">
+            <div class="bottom-nav-corner-right"></div>
+            <div class="nav-item active" onclick="showPage('home')">
+                <div class="nav-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Видео уроки</div>
+            </div>
+            <div class="nav-item" onclick="showPage('strategies')">
+                <div class="nav-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                        <path d="M12 2l2 4-2-1-2 1z" fill="currentColor"/>
+                        <rect x="11.5" y="6" width="1" height="6" fill="currentColor"/>
+                        <path d="M10 14l2-1 2 1v2l-2-1-2 1z" fill="currentColor"/>
+                        <path d="M10.5 15.5l1-0.5 1 0.5v1l-1-0.5-1 0.5z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Стратегии</div>
+            </div>
+            <div class="nav-item" onclick="showPage('family')">
+                <div class="nav-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2M4 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2m5 0c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2" stroke="currentColor" stroke-width="1"/>
+                        <path d="M12.5 11H17v6c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-6M11.5 11H7v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-6M14 9h-4c-.83 0-1.5.67-1.5 1.5v.5h7v-.5c0-.83-.67-1.5-1.5-1.5" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Наша семья</div>
+            </div>
+            <div class="nav-item" onclick="showPage('news')">
+                <div class="nav-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Новости</div>
+            </div>
+            <div class="nav-item" onclick="showPage('analytics')">
+                <div class="nav-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="2" y="3" width="6" height="8" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <rect x="3" y="5" width="4" height="1" fill="currentColor"/>
+                        <rect x="3" y="7" width="2" height="1" fill="currentColor"/>
+                        <rect x="3" y="8" width="2" height="1" fill="currentColor"/>
+                        <rect x="6" y="8" width="1" height="1" fill="currentColor"/>
+                        <circle cx="16" cy="8" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M16 5v3l2 2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 16l2-2" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Аналитика</div>
+            </div>
+            <div class="nav-item" onclick="showPage('support')">
+                <div class="nav-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M16 2v2M8 2v2M20 8h-2M6 8H4M20 16h-2M6 16H4" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Поддержка</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram?.WebApp || {
+            ready: () => {},
+            expand: () => {},
+            sendData: (data) => console.log('Отправка данных:', data),
+            showAlert: (message) => alert(message)
+        };
+
+        tg.ready();
+        tg.expand();
+
+        let currentLanguage = 'ru';
+        let userProfile = null;
+        let currentPage = 'home';
+        let navigationStack = [];
+        let currentCoin = 'BTCUSDT';
+        let currentChartType = 'candles';
+        let currentNewsFilter = 'all';
+        let allNews = [];
+
+        // Данные переводов
+        const translations = {
+            ru: {
+                welcome: "Добро пожаловать",
+                firstName: "Имя",
+                lastName: "Фамилия",
+                birthYear: "Год рождения", 
+                experience: "Опыт в трейдинге",
+                continue: "Продолжить",
+                home: "Видео уроки",
+                strategies: "Стратегии",
+                family: "Наша семья",
+                news: "Новости",
+                analytics: "Аналитика",
+                support: "Поддержка"
+            },
+            en: {
+                welcome: "Welcome",
+                firstName: "First Name",
+                lastName: "Last Name", 
+                birthYear: "Birth Year",
+                experience: "Trading Experience",
+                continue: "Continue",
+                home: "Lessons",
+                strategies: "Strategies",
+                family: "Our Family", 
+                news: "News",
+                analytics: "Analytics",
+                support: "Support"
+            },
+            uz: {
+                welcome: "Xush kelibsiz",
+                firstName: "Ism",
+                lastName: "Familiya",
+                birthYear: "Tug'ilgan yil", 
+                experience: "Savdo tajribasi",
+                continue: "Davom etish",
+                home: "Darslar",
+                strategies: "Strategiyalar",
+                family: "Bizning oila",
+                news: "Yangiliklar",
+                analytics: "Tahlil",
+                support: "Yordam"
+            },
+            ja: {
+                welcome: "いらっしゃいませ",
+                firstName: "名前",
+                lastName: "苗字",
+                birthYear: "生年", 
+                experience: "取引経験",
+                continue: "続行",
+                home: "レッスン",
+                strategies: "戦略",
+                family: "私たちの家族",
+                news: "ニュース",
+                analytics: "分析",
+                support: "サポート"
+            }
+        };
+
+        // Проверка авторизации при загрузке
+        window.addEventListener('load', () => {
+            checkAuth();
+            loadNews();
+            loadStats();
+        });
+
+        function checkAuth() {
+            const savedProfile = JSON.parse(localStorage.getItem('userProfile') || 'null');
+            if (savedProfile) {
+                userProfile = savedProfile;
+                showMainApp();
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        }
+
+        // Обработка формы авторизации
+        document.getElementById('authForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                birthYear: parseInt(document.getElementById('birthYear').value),
+                experience: document.getElementById('experience').value,
+                timestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('userProfile', JSON.stringify(formData));
+            userProfile = formData;
+            tg.sendData(JSON.stringify(formData));
+            showMainApp();
+        });
+
+        // Навигация между страницами
+        function showPage(pageName) {
+            if (pageName !== currentPage) {
+                navigationStack.push(currentPage);
+            }
+            
+            currentPage = pageName;
+
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            document.getElementById(pageName + 'Page').classList.add('active');
+
+            const navItems = document.querySelectorAll('.nav-item');
+            const pageIndex = ['home', 'strategies', 'family', 'news', 'analytics', 'support'].indexOf(pageName);
+            if (pageIndex !== -1 && navItems[pageIndex]) {
+                navItems[pageIndex].classList.add('active');
+            }
+
+            updateBackButton();
+
+            if (pageName === 'strategies') {
+                setTimeout(() => {
+                    initTradingViewChart('mainChart');
+                }, 100);
+            }
+        }
+
+        // Функции для работы со стратегиями
+        function showStrategy(strategyType) {
+            navigationStack.push(currentPage);
+            currentPage = 'strategyDetail';
+            
+            document.getElementById('strategiesPage').classList.remove('active');
+            document.getElementById('strategyDetail').classList.add('active');
+
+            incrementStrategyUsage(strategyType);
+
+            const strategies = {
+                ma14: {
+                    title: 'MA14',
+                    color: '#00c851',
+                    content: `
+                        <p><strong>Принцип:</strong> Сравнение цены закрытия свечей с MA14 (скользящая средняя за 14 свечей)</p>
+                        <h3>Сигналы:</h3>
+                        <ul>
+                            <li><strong>BUY (покупка):</strong> цена выше MA14 и 3 свечи подряд закрылись выше MA14</li>
+                            <li><strong>SELL (продажа):</strong> цена ниже MA14 и 3 свечи подряд закрылись ниже MA14</li>
+                            <li><strong>NEUTRAL:</strong> если свеча пересекла MA14 и закрепилась, но ещё нет 3 свечей</li>
+                        </ul>
+                        <p><strong>Важно:</strong> Если свеча пересекла MA14, но вернулась назад, сигнал остаётся прежним.</p>
+                        <div class="signal-indicator signal-buy">Текущий статус: BUY</div>
+                    `
+                },
+                trendline: {
+                    title: 'Пробой трендовой линии',
+                    color: '#ff6b35',
+                    content: `
+                        <p><strong>Принцип:</strong> Основана на тройном движении и касаниях.</p>
+                        <h3>Построение восходящей трендовой линии:</h3>
+                        <ol>
+                            <li>1 — Хай</li>
+                            <li>2 — Лов</li>
+                            <li>3 — Перехай</li>
+                            <li>Ждём 4 — Лов, соединяем 2 и 4 — получаем трендовую линию</li>
+                        </ol>
+                        <h3>Построение нисходящей трендовой линии:</h3>
+                        <ol>
+                            <li>1 — Лов</li>
+                            <li>2 — Хай</li>
+                            <li>3 — Перелов</li>
+                            <li>Ждём 4 — Хай, соединяем 2 и 4</li>
+                        </ol>
+                        <p><strong>Требуется:</strong> Минимум 2–3 касания для подтверждения линии</p>
+                        <div class="signal-indicator signal-neutral">Текущий статус: NEUTRAL</div>
+                    `
+                },
+                channel: {
+                    title: 'Трендовый канал',
+                    color: '#9c27b0',
+                    content: `
+                        <p><strong>Принцип:</strong> Основан на тройных движениях и мощных импульсах.</p>
+                        <h3>Восходящий канал:</h3>
+                        <ol>
+                            <li>1 — Хай</li>
+                            <li>2 — Лов</li>
+                            <li>3 — Перехай</li>
+                            <li>Соединяем 1 и 3, копируем эту линию и подставляем на точку 2</li>
+                            <li>Ждём пробой вниз</li>
+                        </ol>
+                        <h3>Нисходящий канал:</h3>
+                        <ol>
+                            <li>1 — Лов</li>
+                            <li>2 — Хай</li>
+                            <li>3 — Перелов</li>
+                            <li>Соединяем 1 и 3, копируем и подставляем на 2</li>
+                            <li>Ждём пробой вверх</li>
+                        </ol>
+                        <div class="signal-indicator signal-sell">Текущий статус: SELL</div>
+                    `
+                }
+            };
+
+            const strategy = strategies[strategyType];
+            const titleEl = document.getElementById('strategyDetailTitle');
+            const contentEl = document.getElementById('strategyDetailContent');
+            
+            if (titleEl) titleEl.textContent = strategy.title;
+            if (contentEl) contentEl.innerHTML = strategy.content;
+            
+            const detailSection = document.querySelector('.strategy-detail');
+            if (detailSection) {
+                detailSection.style.setProperty('--strategy-color', strategy.color);
+            }
+            
+            updateBackButton();
+        }
+
+        // Плавающая кнопка назад
+        function updateBackButton() {
+            const backBtn = document.getElementById('floatingBackBtn');
+            if (backBtn) {
+                if (navigationStack.length > 0) {
+                    backBtn.classList.add('show');
+                } else {
+                    backBtn.classList.remove('show');
+                }
+            }
+        }
+
+        function goBack() {
+            if (navigationStack.length > 0) {
+                const previousPage = navigationStack.pop();
+                currentPage = previousPage;
+                
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                document.getElementById(previousPage + 'Page').classList.add('active');
+                
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                const pageIndex = ['home', 'strategies', 'family', 'news', 'analytics', 'support'].indexOf(previousPage);
+                if (pageIndex !== -1) {
+                    document.querySelectorAll('.nav-item')[pageIndex].classList.add('active');
+                }
+                
+                updateBackButton();
+                
+                if (previousPage === 'strategies') {
+                    setTimeout(() => {
+                        initTradingViewChart('mainChart');
+                    }, 100);
+                }
+            }
+        }
+
+        // Статистика использования стратегий
+        function loadStats() {
+            const statsData = JSON.parse(localStorage.getItem('strategyStats') || '{"ma14": 0, "trendline": 0, "channel": 0, "hasUsed": false}');
+            
+            if (statsData.hasUsed) {
+                const statsResult = document.getElementById('statsResult');
+                if (statsResult) {
+                    statsResult.style.display = 'block';
+                    updateStatsDisplay(statsData);
+                }
+            }
+        }
+
+        function setStrategyUsage(hasUsed) {
+            const statsData = JSON.parse(localStorage.getItem('strategyStats') || '{"ma14": 0, "trendline": 0, "channel": 0, "hasUsed": false}');
+            statsData.hasUsed = hasUsed;
+            
+            const statsResult = document.getElementById('statsResult');
+            if (statsResult) {
+                if (hasUsed) {
+                    statsResult.style.display = 'block';
+                    updateStatsDisplay(statsData);
+                } else {
+                    statsResult.style.display = 'none';
+                    const resetStats = {"ma14": 0, "trendline": 0, "channel": 0, "hasUsed": false};
+                    localStorage.setItem('strategyStats', JSON.stringify(resetStats));
+                }
+            }
+            
+            localStorage.setItem('strategyStats', JSON.stringify(statsData));
+        }
+
+        function incrementStrategyUsage(strategyType) {
+            const statsData = JSON.parse(localStorage.getItem('strategyStats') || '{"ma14": 0, "trendline": 0, "channel": 0, "hasUsed": false}');
+            
+            if (statsData.hasUsed) {
+                statsData[strategyType] = (statsData[strategyType] || 0) + 1;
+                localStorage.setItem('strategyStats', JSON.stringify(statsData));
+                updateStatsDisplay(statsData);
+            }
+        }
+
+        function updateStatsDisplay(statsData) {
+            const total = (statsData.ma14 || 0) + (statsData.trendline || 0) + (statsData.channel || 0);
+            
+            const totalUsage = document.getElementById('totalUsage');
+            const ma14Count = document.getElementById('ma14Count');
+            const trendlineCount = document.getElementById('trendlineCount');
+            const channelCount = document.getElementById('channelCount');
+            
+            if (totalUsage) totalUsage.textContent = total;
+            if (ma14Count) ma14Count.textContent = statsData.ma14 || 0;
+            if (trendlineCount) trendlineCount.textContent = statsData.trendline || 0;
+            if (channelCount) channelCount.textContent = statsData.channel || 0;
+        }
+
+        // Функция приглашения друга
+        function inviteFriend() {
+            const inviteLink = `https://t.me/TersaaMtBot?start=${userProfile?.firstName || 'user'}_invite`;
+            const message = `🚀 Присоединяйся к TersaaMt!\n\nЛучшие торговые стратегии и анализ криптовалют.\n\n${inviteLink}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'TersaaMt - Торговые стратегии',
+                    text: message,
+                    url: inviteLink
+                });
+            } else {
+                navigator.clipboard.writeText(message).then(() => {
+                    tg.showAlert('Ссылка скопирована в буфер обмена!');
+                });
+            }
+        }
+
+        // Инициализация TradingView графика
+        function initTradingViewChart(containerId) {
+            if (typeof TradingView !== 'undefined') {
+                const chartStyle = currentChartType === 'candles' ? "1" : "8";
+                
+                new TradingView.widget({
+                    "width": "100%",
+                    "height": 500,
+                    "symbol": `BINANCE:${currentCoin}`,
+                    "interval": "1H",
+                    "timezone": "Asia/Tashkent",
+                    "theme": "dark",
+                    "style": chartStyle,
+                    "locale": currentLanguage,
+                    "toolbar_bg": "#0a0e27",
+                    "enable_publishing": false,
+                    "withdateranges": true,
+                    "range": "3M",
+                    "hide_side_toolbar": false,
+                    "allow_symbol_change": true,
+                    "details": true,
+                    "hotlist": true,
+                    "calendar": true,
+                    "studies": [
+                        "MASimple@tv-basicstudies"
+                    ],
+                    "container_id": containerId,
+                    "studies_overrides": {
+                        "MASimple.length": 14,
+                        "MASimple.plot.color": "#00c851"
+                    },
+                    "overrides": {
+                        "paneProperties.background": "#0a0e27",
+                        "paneProperties.vertGridProperties.color": "#2a2f4a",
+                        "paneProperties.horzGridProperties.color": "#2a2f4a",
+                        "symbolWatermarkProperties.transparency": 90,
+                        "scalesProperties.textColor": "#ffffff",
+                        "mainSeriesProperties.candleStyle.upColor": "#00c851",
+                        "mainSeriesProperties.candleStyle.downColor": "#ff4444",
+                        "mainSeriesProperties.candleStyle.drawWick": true,
+                        "mainSeriesProperties.candleStyle.drawBorder": true,
+                        "mainSeriesProperties.candleStyle.borderColor": "#378658",
+                        "mainSeriesProperties.candleStyle.borderUpColor": "#00c851",
+                        "mainSeriesProperties.candleStyle.borderDownColor": "#ff4444",
+                        "mainSeriesProperties.candleStyle.wickUpColor": "#00c851",
+                        "mainSeriesProperties.candleStyle.wickDownColor": "#ff4444",
+                        "mainSeriesProperties.barStyle.upColor": "#00c851",
+                        "mainSeriesProperties.barStyle.downColor": "#ff4444"
+                    }
+                });
+            }
+        }
+
+        // Загрузка новостей
+        async function loadNews() {
+            const newsContainer = document.getElementById('newsContainer');
+            if (!newsContainer) return;
+            
+            try {
+                const mockNews = [
+                    {
+                        title: "Bitcoin достиг нового максимума в $75,000",
+                        summary: "Криптовалютный рынок показывает сильный рост на фоне институционального интереса к цифровым активам.",
+                        date: "2025-08-05T10:30:00Z",
+                        source: "CoinTelegraph",
+                        importance: "high"
+                    },
+                    {
+                        title: "Ethereum готовится к крупному обновлению",
+                        summary: "Разработчики Ethereum объявили о планах внедрения новых функций масштабирования в следующем квартале.",
+                        date: "2025-08-05T08:15:00Z",
+                        source: "CryptoPanic",
+                        importance: "high"
+                    },
+                    {
+                        title: "Новый токен TERSAA запущен на Binance",
+                        summary: "Инновационный DeFi проект TERSAA начал торговлю на крупнейшей криптобирже мира с объемом $50M в первый день.",
+                        date: "2025-08-04T16:45:00Z",
+                        source: "Binance News",
+                        importance: "medium"
+                    },
+                    {
+                        title: "Регуляторы США одобрили новые ETF",
+                        summary: "SEC дал зеленый свет нескольким новым криптовалютным ETF, что может привлечь дополнительные институциональные инвестиции.",
+                        date: "2025-08-04T14:20:00Z",
+                        source: "Reuters",
+                        importance: "high"
+                    },
+                    {
+                        title: "Альткоины показывают рост на 25%",
+                        summary: "Большинство альтернативных криптовалют демонстрируют значительный рост за последние 24 часа на фоне общего оптимизма рынка.",
+                        date: "2025-08-04T12:00:00Z",
+                        source: "CoinMarketCap",
+                        importance: "medium"
+                    },
+                    {
+                        title: "Новые правила налогообложения крипто",
+                        summary: "Финансовые регуляторы обновили требования к декларированию доходов от криптовалютных операций для физических лиц.",
+                        date: "2025-08-03T09:30:00Z",
+                        source: "Financial Times",
+                        importance: "low"
+                    }
+                ];
+
+                allNews = mockNews;
+                displayNews(filterNewsByImportance(allNews, currentNewsFilter));
+                
+            } catch (error) {
+                newsContainer.innerHTML = '<div class="loading">Ошибка загрузки новостей</div>';
+            }
+        }
+
+        function filterNewsByImportance(news, filter) {
+            if (filter === 'all') return news;
+            return news.filter(item => item.importance === filter);
+        }
+
+        function displayNews(newsArray) {
+            const newsContainer = document.getElementById('newsContainer');
+            if (!newsContainer) return;
+            
+            newsContainer.innerHTML = '';
+            
+            if (newsArray.length === 0) {
+                newsContainer.innerHTML = '<div class="loading">Новости не найдены</div>';
+                return;
+            }
+            
+            newsArray.forEach(news => {
+                const newsItem = document.createElement('div');
+                newsItem.className = 'news-item';
+                
+                const date = new Date(news.date);
+                const formattedDate = date.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const importanceStars = {
+                    'high': '⭐⭐⭐',
+                    'medium': '⭐⭐',
+                    'low': '⭐'
+                };
+                
+                const importanceClass = {
+                    'high': 'high',
+                    'medium': 'medium',
+                    'low': 'low'
+                };
+                
+                newsItem.innerHTML = `
+                    <div class="news-title">${news.title}</div>
+                    <div class="news-summary">${news.summary}</div>
+                    <div class="news-date">
+                        <span class="news-importance ${importanceClass[news.importance]}">${importanceStars[news.importance]}</span>
+                        ${formattedDate} • ${news.source}
+                    </div>
+                `;
+                
+                newsContainer.appendChild(newsItem);
+            });
+        }
+
+        function filterNews(importance) {
+            currentNewsFilter = importance;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeFilter = document.querySelector(`[data-filter="${importance}"]`);
+            if (activeFilter) activeFilter.classList.add('active');
+            
+            displayNews(filterNewsByImportance(allNews, importance));
+        }
+
+        // Обработка формы поддержки
+        const supportForm = document.getElementById('supportForm');
+        if (supportForm) {
+            supportForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const supportData = {
+                    name: document.getElementById('supportName').value,
+                    subject: document.getElementById('supportSubject').value,
+                    description: document.getElementById('supportDescription').value,
+                    userProfile: userProfile,
+                    timestamp: new Date().toISOString()
+                };
+
+                tg.sendData(JSON.stringify(supportData));
+                tg.showAlert('Ваш запрос отправлен! Мы свяжемся с вами в ближайшее время.');
+                supportForm.reset();
+            });
+        }
+
+        // Функции для настроек
+        function toggleSettingsDropdown() {
+            const dropdown = document.getElementById('settingsDropdown');
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('selectedLanguage', lang);
+            updateLanguage();
+            toggleSettingsDropdown();
+        }
+
+        function setChartType(type) {
+            currentChartType = type;
+            localStorage.setItem('chartType', type);
+            if (currentPage === 'strategies') {
+                setTimeout(() => {
+                    initTradingViewChart('mainChart');
+                }, 100);
+            }
+            tg.showAlert(`Тип графика изменен на: ${type === 'candles' ? 'Японские свечи' : 'Бары'}`);
+            toggleSettingsDropdown();
+        }
+
+        function activatePromo() {
+            const promoInput = document.getElementById('promoInput');
+            if (!promoInput) return;
+            
+            const promoCode = promoInput.value.trim();
+            
+            if (promoCode === 'авирпмщвци') {
+                tg.showAlert('🎉 Промокод активирован! Вы получили доступ к премиум функциям!');
+                localStorage.setItem('premiumAccess', 'true');
+                promoInput.value = '';
+            } else if (promoCode === '') {
+                tg.showAlert('❌ Введите промокод');
+            } else {
+                tg.showAlert('❌ Неверный промокод');
+            }
+            toggleSettingsDropdown();
+        }
+
+        function showFAQ() {
+            toggleSettingsDropdown();
+            tg.showAlert(`❓ FAQ:\n\n1. Как пользоваться стратегиями?\n   - Перейдите в раздел "Стратегии" и выберите нужную\n\n2. Как активировать промокод?\n   - Откройте настройки и введите код\n\n3. Как изменить валютную пару?\n   - В разделе стратегий выберите нужную монету\n\n4. Поддержка:\n   - Обращайтесь через раздел "Поддержка"`);
+        }
+
+        // Функции для работы с монетами
+        function selectCoin(symbol) {
+            currentCoin = symbol;
+            
+            document.querySelectorAll('.coin-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeCoin = document.querySelector(`[data-coin="${symbol}"]`);
+            if (activeCoin) activeCoin.classList.add('active');
+            
+            setTimeout(() => {
+                initTradingViewChart('mainChart');
+            }, 100);
+        }
+
+        // Функции для работы с профилем
+        function showProfile() {
+            navigationStack.push(currentPage);
+            currentPage = 'profile';
+            
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            const profilePage = document.getElementById('profilePage');
+            if (profilePage) profilePage.classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            loadProfileData();
+            updateBackButton();
+        }
+        
+        function loadProfileData() {
+            if (!userProfile) return;
+            
+            const experienceMap = {
+                'beginner': 'Новичок (0-6 месяцев)',
+                'intermediate': 'Средний (6 месяцев - 2 года)',
+                'advanced': 'Продвинутый (2-5 лет)',
+                'expert': 'Эксперт (5+ лет)'
+            };
+            
+            const profileName = document.getElementById('profileName');
+            const profileExperience = document.getElementById('profileExperience');
+            const profileFirstName = document.getElementById('profileFirstName');
+            const profileLastName = document.getElementById('profileLastName');
+            const profileBirthYear = document.getElementById('profileBirthYear');
+            const profileExp = document.getElementById('profileExp');
+            const profileRegistered = document.getElementById('profileRegistered');
+            const profilePremium = document.getElementById('profilePremium');
+            
+            if (profileName) profileName.textContent = `${userProfile.firstName} ${userProfile.lastName}`;
+            if (profileExperience) profileExperience.textContent = experienceMap[userProfile.experience] || userProfile.experience;
+            if (profileFirstName) profileFirstName.textContent = userProfile.firstName;
+            if (profileLastName) profileLastName.textContent = userProfile.lastName;
+            if (profileBirthYear) profileBirthYear.textContent = userProfile.birthYear;
+            if (profileExp) profileExp.textContent = experienceMap[userProfile.experience] || userProfile.experience;
+            
+            const registeredDate = new Date(userProfile.timestamp);
+            if (profileRegistered) profileRegistered.textContent = registeredDate.toLocaleDateString('ru-RU');
+            
+            const hasPremium = localStorage.getItem('premiumAccess') === 'true';
+            if (profilePremium) {
+                profilePremium.textContent = hasPremium ? 'Да' : 'Нет';
+                profilePremium.style.color = hasPremium ? '#00c851' : '#ffc107';
+            }
+        }
+        
+        function editProfile() {
+            tg.showAlert('🔧 Функция редактирования профиля будет доступна в следующем обновлении!');
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            
+            const authTitle = document.querySelector('.auth-title');
+            const firstNameLabel = document.querySelector('label[for="firstName"]');
+            const lastNameLabel = document.querySelector('label[for="lastName"]');
+            const birthYearLabel = document.querySelector('label[for="birthYear"]');
+            const experienceLabel = document.querySelector('label[for="experience"]');
+            const btnPrimary = document.querySelector('.btn-primary');
+            
+            if (authTitle) authTitle.textContent = t.welcome;
+            if (firstNameLabel) firstNameLabel.textContent = t.firstName;
+            if (lastNameLabel) lastNameLabel.textContent = t.lastName;
+            if (birthYearLabel) birthYearLabel.textContent = t.birthYear;
+            if (experienceLabel) experienceLabel.textContent = t.experience;
+            if (btnPrimary) btnPrimary.textContent = t.continue;
+            
+            const navItems = document.querySelectorAll('.nav-label');
+            if (navItems.length >= 6) {
+                navItems[0].textContent = t.home;
+                navItems[1].textContent = t.strategies;
+                navItems[2].textContent = t.family;
+                navItems[3].textContent = t.news;
+                navItems[4].textContent = t.analytics;
+                navItems[5].textContent = t.support;
+            }
+        }
+
+        // Загрузка сохраненных настроек
+        window.addEventListener('load', () => {
+            const savedLanguage = localStorage.getItem('selectedLanguage');
+            if (savedLanguage && translations[savedLanguage]) {
+                currentLanguage = savedLanguage;
+                updateLanguage();
+            }
+            
+            const savedChartType = localStorage.getItem('chartType');
+            if (savedChartType) {
+                currentChartType = savedChartType;
+            }
+        });
+
+        // Закрытие dropdown при клике вне его
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('settingsDropdown');
+            const settingsBtn = document.querySelector('.settings-btn');
+            
+            if (dropdown && settingsBtn && !dropdown.contains(e.target) && !settingsBtn.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // Обработка данных Telegram WebApp
+        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+            const telegramUser = window.Telegram.WebApp.initDataUnsafe.user;
+            
+            if (telegramUser.first_name) {
+                const firstNameInput = document.getElementById('firstName');
+                if (firstNameInput) firstNameInput.value = telegramUser.first_name;
+            }
+            if (telegramUser.last_name) {
+                const lastNameInput = document.getElementById('lastName');
+                if (lastNameInput) lastNameInput.value = telegramUser.last_name;
+            }
+            if (telegramUser.username) {
+                const supportNameInput = document.getElementById('supportName');
+                if (supportNameInput) {
+                    supportNameInput.value = telegramUser.first_name + ' ' + (telegramUser.last_name || '');
+                }
+            }
+        }
+
+        // Инициализация основного TradingView графика
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const mainChart = document.getElementById('mainChart');
+                if (mainChart) {
+                    initTradingViewChart('mainChart');
+                }
+            }, 1000);
+        });
+
+        console.log('TersaaMt Trading App ✅ v2.3 - Заголовок TersaaMt исправлен и добавлена темно-синяя подсветка углов');
+    </script>
+</body>
+</html> 
